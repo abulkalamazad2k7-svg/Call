@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Voice Call App</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      text-align: center;
+      padding-top: 100px;
+      color: white;
+    }
+
+    .container {
+      background: rgba(255,255,255,0.1);
+      padding: 30px;
+      border-radius: 20px;
+      display: inline-block;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 15px 25px;
+      margin: 10px;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .start {
+      background: #00c853;
+      color: white;
+    }
+
+    .start:hover {
+      background: #00a844;
+    }
+
+    .answer {
+      background: #2962ff;
+      color: white;
+    }
+
+    .answer:hover {
+      background: #0039cb;
+    }
+
+    .status {
+      margin-top: 20px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+  </style>
+
+</head>
+<body>
+
+<div class="container">
+  <h2>📞 Voice Call App</h2>
+
+  <button class="start" onclick="startCall()">Start Call</button>
+  <button class="answer" onclick="answerCall()">Answer Call</button>
+
+  <div class="status" id="status">Status: Idle</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDWI8alBXRNm2byoZzdxTiDT8V8Aj40fxI",
+  authDomain: "caling-11e9e.firebaseapp.com",
+  projectId: "caling-11e9e",
+  storageBucket: "caling-11e9e.firebasestorage.app",
+  messagingSenderId: "209843993937",
+  appId: "1:209843993937:web:83fd2c948e2e881d84a770",
+  measurementId: "G-PXTYC5VB6Q"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let pc = new RTCPeerConnection();
+let localStream;
+
+// 🎤 Start Call
+window.startCall = async function(){
+  document.getElementById("status").innerText = "📡 Calling...";
+
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  await setDoc(doc(db, "calls", "room1"), {
+    offer: JSON.stringify(offer)
+  });
+}
+
+// 📞 Answer Call
+window.answerCall = async function(){
+  document.getElementById("status").innerText = "🔗 Connecting...";
+
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  const callDoc = await getDoc(doc(db, "calls", "room1"));
+  const offer = JSON.parse(callDoc.data().offer);
+
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  await updateDoc(doc(db, "calls", "room1"), {
+    answer: JSON.stringify(answer)
+  });
+
+  document.getElementById("status").innerText = "✅ Connected!";
+}
+</script>
+
+</body>
+</html>
