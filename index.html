@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>🔥 Firebase Live Chat</title>
+  <title>🔥 Stylish Firebase Chat</title>
 
   <style>
     body {
+      margin: 0;
       font-family: Arial;
-      background: #0f172a;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
       color: white;
       text-align: center;
     }
 
     h2 {
+      padding: 15px;
+      background: #020617;
+      margin: 0;
       color: #38bdf8;
     }
 
-    #chatBox {
+    #chat {
       width: 90%;
       max-width: 400px;
-      height: 350px;
-      margin: auto;
-      background: #1e293b;
+      height: 400px;
+      margin: 20px auto;
+      background: #020617;
       border-radius: 10px;
       overflow-y: scroll;
       padding: 10px;
@@ -28,22 +32,35 @@
     }
 
     .msg {
-      background: #334155;
+      background: #1e293b;
       padding: 8px;
-      margin: 5px;
+      margin: 6px 0;
       border-radius: 6px;
+    }
+
+    .name {
+      color: #38bdf8;
+      font-weight: bold;
+    }
+
+    #inputBox {
+      margin-bottom: 20px;
     }
 
     input {
       padding: 10px;
-      width: 60%;
+      margin: 5px;
+      width: 120px;
       border-radius: 5px;
       border: none;
-      margin-top: 10px;
+    }
+
+    #msgInput {
+      width: 200px;
     }
 
     button {
-      padding: 10px;
+      padding: 10px 15px;
       border: none;
       background: #38bdf8;
       color: black;
@@ -59,45 +76,35 @@
 
 <body>
 
-<h2>🔥 Live Firebase Chat</h2>
+<h2>🔥 Live Chat</h2>
 
-<div id="chatBox"></div>
+<div id="chat"></div>
 
-<br>
-
-<input type="text" id="username" placeholder="Your Name">
-<br>
-<input type="text" id="message" placeholder="Write message...">
-<button onclick="sendMessage()">Send</button>
+<div id="inputBox">
+  <input id="name" placeholder="Your Name">
+  <input id="msgInput" placeholder="Write message">
+  <button onclick="send()">Send</button>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// 🔥 তোমার Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDvONr_6u6-axEBOJkoVHdPf_-1ttO9Yf0",
   authDomain: "call-264ca.firebaseapp.com",
   projectId: "call-264ca",
-  storageBucket: "call-264ca.firebasestorage.app",
-  messagingSenderId: "896610494705",
-  appId: "1:896610494705:web:07a40fef65b6ce63c1a150",
-  measurementId: "G-J4TKQT9R7K"
 };
 
-// Init
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 📤 Message Send
-window.sendMessage = async function() {
-  const name = document.getElementById("username").value;
-  const msg = document.getElementById("message").value;
+// send message
+window.send = async function() {
+  let name = document.getElementById("name").value;
+  let msg = document.getElementById("msgInput").value;
 
-  if(name === "" || msg === ""){
-    alert("Name & Message required!");
-    return;
-  }
+  if(!name || !msg) return alert("Fill all");
 
   await addDoc(collection(db, "messages"), {
     name: name,
@@ -105,25 +112,22 @@ window.sendMessage = async function() {
     time: Date.now()
   });
 
-  document.getElementById("message").value = "";
+  document.getElementById("msgInput").value = "";
 }
 
-// 📥 Real-time Load
-const q = query(collection(db, "messages"), orderBy("time"));
-
-onSnapshot(q, (snapshot) => {
+// real-time chat load
+onSnapshot(collection(db, "messages"), (snap) => {
   let html = "";
 
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    html += `<div class="msg"><b>${data.name}:</b> ${data.text}</div>`;
+  snap.forEach(doc => {
+    let d = doc.data();
+    html += `<div class="msg"><span class="name">${d.name}:</span> ${d.text}</div>`;
   });
 
-  document.getElementById("chatBox").innerHTML = html;
+  document.getElementById("chat").innerHTML = html;
 
-  // Auto scroll bottom
-  const box = document.getElementById("chatBox");
-  box.scrollTop = box.scrollHeight;
+  let chatBox = document.getElementById("chat");
+  chatBox.scrollTop = chatBox.scrollHeight;
 });
 </script>
 
