@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Voice Call FIXED</title>
+</head>
+<body>
+
+<h2>📞 Voice Call (Fixed)</h2>
+
+<button onclick="startCall()">Start Call</button>
+<button onclick="answerCall()">Answer Call</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDWI8alBXRNm2byoZzdxTiDT8V8Aj40fxI",
+  authDomain: "caling-11e9e.firebaseapp.com",
+  projectId: "caling-11e9e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ✅ STUN server add
+let pc = new RTCPeerConnection({
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" }
+  ]
+});
+
+let localStream;
+
+// ICE candidate send to Firebase
+pc.onicecandidate = async (event) => {
+  if (event.candidate) {
+    await updateDoc(doc(db, "calls", "room1"), {
+      candidate: JSON.stringify(event.candidate)
+    });
+  }
+};
+
+// 🎤 Start Call
+window.startCall = async function(){
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  await setDoc(doc(db, "calls", "room1"), {
+    offer: JSON.stringify(offer)
+  });
+
+  // Listen for answer
+  onSnapshot(doc(db, "calls", "room1"), async (docSnap) => {
+    const data = docSnap.data();
+    if (data.answer && !pc.currentRemoteDescription) {
+      const answer = JSON.parse(data.answer);
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      console.log("✅ Connected!");
+    }
+  });
+}
+
+// 📞 Answer Call
+window.answerCall = async function(){
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  const callDoc = await getDoc(doc(db, "calls", "room1"));
+  const offer = JSON.parse(callDoc.data().offer);
+
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  await updateDoc(doc(db, "calls", "room1"), {
+    answer: JSON.stringify(answer)
+  });
+}
+</script>
+
+</body>
+</html>
