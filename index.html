@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Voice Call App</title>
+</head>
+<body>
+
+<h2>📞 Voice Call App</h2>
+
+<button onclick="startCall()">Start Call</button>
+<button onclick="answerCall()">Answer Call</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+// 🔥 আপনার Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyDWI8alBXRNm2byoZzdxTiDT8V8Aj40fxI",
+  authDomain: "caling-11e9e.firebaseapp.com",
+  projectId: "caling-11e9e",
+  storageBucket: "caling-11e9e.firebasestorage.app",
+  messagingSenderId: "209843993937",
+  appId: "1:209843993937:web:83fd2c948e2e881d84a770",
+  measurementId: "G-PXTYC5VB6Q"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let pc = new RTCPeerConnection();
+let localStream;
+
+// 🎤 Start Call
+window.startCall = async function(){
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  await setDoc(doc(db, "calls", "room1"), {
+    offer: JSON.stringify(offer)
+  });
+
+  alert("📡 Call Started!");
+}
+
+// 📞 Answer Call
+window.answerCall = async function(){
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  const callDoc = await getDoc(doc(db, "calls", "room1"));
+  const offer = JSON.parse(callDoc.data().offer);
+
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  await updateDoc(doc(db, "calls", "room1"), {
+    answer: JSON.stringify(answer)
+  });
+
+  alert("✅ Call Connected!");
+}
+</script>
+
+</body>
+</html>
